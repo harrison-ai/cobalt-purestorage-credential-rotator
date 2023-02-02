@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 import time
 from base64 import urlsafe_b64encode
 from datetime import datetime, timedelta
@@ -84,12 +83,9 @@ def key_too_recent(keys):
 
 
 def generate_aws_credentials(credentials):
-    """
-    Given FlashBlade credentials, return the credentials
+    """Given FlashBlade credentials, return the credentials
     in the format expected by the AWS SDK.
     """
-
-    print(os.environ)
 
     #  to allow time for credentials to be distributed,
     #  add a buffer to their expiry time

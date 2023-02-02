@@ -1,17 +1,16 @@
 """ Config Module """
 
-
-import yaml
 from pydantic import BaseSettings, Field
 
 
 class Settings(BaseSettings):
     log_level: str = Field("INFO", env="LOG_LEVEL")
-    fb_url: str = Field(..., env="FB_URL")
-    api_token: str = Field(..., env="API_TOKEN")
-    excluded_user_names: set[str] = Field(None, env="EXCLUDED_USER_NAMES")
+    fb_url: str = Field(None, env="FB_URL")
+    verify_fb_tls: bool = Field(False, env="VERIFY_FB_TLS")
+    api_token: str = Field(None, env="API_TOKEN")
+    excluded_user_names: set[str] = Field(set(), env="EXCLUDED_USER_NAMES")
     interesting_object_accounts: set[str] = Field(
-        None, env="INTERESTING_OBJECT_ACCOUNTS"
+        set(), env="INTERESTING_OBJECT_ACCOUNTS"
     )
     k8s_mode: bool = Field(False, env="K8S_MODE")
     credentials_output_path: str = Field(

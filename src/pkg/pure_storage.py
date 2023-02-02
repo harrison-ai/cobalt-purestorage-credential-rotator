@@ -1,6 +1,7 @@
 """  PureStorage FlashBlade Module """
 
 import logging
+import warnings
 
 import requests
 import urllib3
@@ -10,8 +11,6 @@ from pypureclient.flashblade import Client, ObjectStoreAccessKeyPost
 from pkg.config import config
 from pkg.logging_utils import format_stacktrace
 
-urllib3.disable_warnings()
-
 logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)
 
@@ -20,29 +19,35 @@ class PureStorageFlashBlade:
     """Service class for the PureStorage FlashBlade API"""
 
     def __init__(self):
-        logger.debug("Istantiating PureStorageFlashBlade instance")
-        client = self._create_client(config.fb_url, config.api_token)
+        logger.debug("Instantiating FlashBlade Client")
+        self.client = self._create_client(config.fb_url, config.api_token)
 
-        if client is None:
-            raise RuntimeError("could not istantiate Pure client")
+        # if client is None:
+        #     raise RuntimeError("could not instantiate Pure client")
 
-        self.client = client
-        logger.debug("PureStorageFlashBlade Client istantiated OK")
+        # self.client = client
+        logger.debug("FlashBlade Client instantiated OK")
 
     def _create_client(self, url, token):
         """Create the client"""
 
-        try:
-            client = Client(url, api_token=token)
-            return client
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
 
-        except requests.exceptions.ConnectionError:
-            logger.error(format_stacktrace())
-            return None
+            try:
+                client = Client(url, api_token=token)
+                return client
 
-        except PureError:
-            logger.error(format_stacktrace())
-            return None
+            except requests.exceptions.ConnectionError:
+                logger.error(format_stacktrace())
+                raise RuntimeError("Could not instantiate FlashBlade client")
+
+            except PureError:
+                logger.error(format_stacktrace())
+                raise RuntimeError("Could not instantiate FlashBlade Client")
 
     def get_object_store_accounts(self, limit=10):
         """Get all object store accounts, returning only the accounts"""
@@ -50,23 +55,25 @@ class PureStorageFlashBlade:
         accounts = []
         kwargs = {"limit": limit}
 
-        while True:
-            logger.debug("in function")
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
 
-            resp = self.client.get_object_store_accounts(**kwargs).to_dict()
+            while True:
+                resp = self.client.get_object_store_accounts(**kwargs).to_dict()
 
-            logger.debug(resp)
+                for account in resp["items"]:
+                    accounts.append(account)
 
-            for account in resp["items"]:
-                accounts.append(account)
+                if resp["continuation_token"] is not None:
+                    kwargs["continuation_token"] = resp["continuation_token"]
 
-            if resp["continuation_token"] is not None:
-                kwargs["continuation_token"] = resp["continuation_token"]
+                else:
+                    break
 
-            else:
-                break
-
-        return accounts
+            return accounts
 
     def get_object_store_users(self, limit=10):
         """Get all object store users, returning only the users"""
@@ -74,19 +81,25 @@ class PureStorageFlashBlade:
         users = []
         kwargs = {"limit": limit}
 
-        while True:
-            resp = self.client.get_object_store_users(**kwargs).to_dict()
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
 
-            for user in resp["items"]:
-                users.append(user)
+            while True:
+                resp = self.client.get_object_store_users(**kwargs).to_dict()
 
-            if resp["continuation_token"] is not None:
-                kwargs["continuation_token"] = resp["continuation_token"]
+                for user in resp["items"]:
+                    users.append(user)
 
-            else:
-                break
+                if resp["continuation_token"] is not None:
+                    kwargs["continuation_token"] = resp["continuation_token"]
 
-        return users
+                else:
+                    break
+
+            return users
 
     def get_object_store_access_keys(self, limit=10):
         """Get all object store keys, returning only the keys"""
@@ -94,40 +107,60 @@ class PureStorageFlashBlade:
         keys = []
         kwargs = {"limit": limit}
 
-        while True:
-            resp = self.client.get_object_store_access_keys(**kwargs).to_dict()
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
 
-            for key in resp["items"]:
-                keys.append(key)
+            while True:
+                resp = self.client.get_object_store_access_keys(**kwargs).to_dict()
 
-            if resp["continuation_token"] is not None:
-                kwargs["continuation_token"] = resp["continuation_token"]
+                for key in resp["items"]:
+                    keys.append(key)
 
-            else:
-                break
+                if resp["continuation_token"] is not None:
+                    kwargs["continuation_token"] = resp["continuation_token"]
 
-        return keys
+                else:
+                    break
+
+            return keys
 
     def post_object_store_access_keys(self, user_id):
-        """xx"""
+        """Create a new object store access key"""
 
-        resp = self.client.post_object_store_access_keys(
-            object_store_access_key=ObjectStoreAccessKeyPost(user={"id": user_id})
-        ).to_dict()
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
+
+            resp = self.client.post_object_store_access_keys(
+                object_store_access_key=ObjectStoreAccessKeyPost(user={"id": user_id})
+            ).to_dict()
 
         if resp["status_code"] == 200:
             return resp["items"][0]
 
-        print("an error occured creating a key...")
-        print(resp)
+        logger.error(f"An error occured creating a key for user {user_id}")
         return None
 
     def delete_object_store_access_keys(self, key_names):
         """Given a list of key names, delete them"""
 
-        resp = self.client.delete_object_store_access_keys(names=key_names).to_dict()
+        with warnings.catch_warnings():
+            if not config.verify_fb_tls:
+                warnings.simplefilter(
+                    "ignore", urllib3.exceptions.InsecureRequestWarning
+                )
+
+            resp = self.client.delete_object_store_access_keys(
+                names=key_names
+            ).to_dict()
+
         if resp["status_code"] == 200:
             return
 
-        print("an error occured deleting a key...")
-        print(resp)
+        logger.error(f"An error occured deleting keys {key_names}")
+        return None
