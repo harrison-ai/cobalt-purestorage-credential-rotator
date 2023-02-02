@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eu
 
-pip install -e .[dev]
-pytest -sv
+python -m pytest

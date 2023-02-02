@@ -16,7 +16,21 @@ def test_rotate(mock, caplog):
     runner = CliRunner()
     mock.return_value = None
 
-    result = runner.invoke(cli.rotate)
+    result = runner.invoke(cli.rotate_entrypoint)
+
+    assert result.output == ""
+    mock.assert_called_once()
+    mock.assert_called_with()
+
+
+@patch("cobalt_purestorage.cli.smoketest.main")
+def test_smoketest(mock, caplog):
+    caplog.set_level(1000)
+
+    runner = CliRunner()
+    mock.return_value = None
+
+    result = runner.invoke(cli.smoketest_entrypoint)
 
     assert result.output == ""
     mock.assert_called_once()

@@ -1,28 +1,29 @@
+# builder stage
 FROM python:3.10-slim-bullseye as builder
 
-ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-# RUN apt-get update \
-#     && apt-get install \
-#     ca-certificates \
-#     --no-install-recommends -y
+COPY requirements.txt .
 
-RUN pip install -U pip && \
-    pip install build
+RUN pip wheel --no-deps --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
-COPY . ./
+COPY . .
 
-RUN python -m build --wheel
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels .
 
+# final stage
 FROM python:3.10-slim-bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
+# ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update \
     && apt-get install \
     ca-certificates \
+    tree \
     --no-install-recommends -y
 
-COPY --from=builder /dist/*.whl ./
+COPY --from=builder /app/wheels/* /app/wheels/
 
-RUN pip install /*.whl
+RUN pip install --no-index /app/wheels/*.whl

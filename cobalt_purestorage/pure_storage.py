@@ -21,11 +21,6 @@ class PureStorageFlashBlade:
     def __init__(self):
         logger.debug("Instantiating FlashBlade Client")
         self.client = self._create_client(config.fb_url, config.api_token)
-
-        # if client is None:
-        #     raise RuntimeError("could not instantiate Pure client")
-
-        # self.client = client
         logger.debug("FlashBlade Client instantiated OK")
 
     def _create_client(self, url, token):

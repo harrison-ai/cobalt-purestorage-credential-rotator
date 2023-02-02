@@ -19,23 +19,27 @@ clean-test: ## remove test and coverage artifacts
 
 clean: clean-build clean-pyc clean-test
 
-build-docker:
-	docker compose build
+build-dev: clean
+	docker compose build dev
 
-fmt: .env
+build-app: clean
+	docker compose build app
+
+fmt:
 	docker compose run --rm dev ./scripts/check.sh
 
-test: .env
+test:
 	docker compose run --rm dev ./scripts/test.sh
 
-shell: .env
+shell:
 	docker compose run --rm --entrypoint='' dev /bin/bash
 
 rotate:
 	docker compose up app
 
-down:
-	docker compose down
+smoketest:
+	docker compose up smoketest
 
-.env:
-	touch .env
+down:
+	docker compose down --remove-orphans --volumes
+

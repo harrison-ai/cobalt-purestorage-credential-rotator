@@ -13,8 +13,17 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
-      # - naame: run formatting checks
-      #   run: make check
+      - name: build dev container
+        run: make build-dev
+
+      - name: run formatting checks
+        run: make fmt
 
       - name: run unit tests
         run: make test
+
+      - name: build app container - Build the shippable image
+        run: make build-app
+
+      - name: smoketest - Ensure the shippable image has built correctly
+        run: make smoketest
