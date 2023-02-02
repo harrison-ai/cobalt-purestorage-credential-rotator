@@ -1,0 +1,45 @@
+[project]
+name = "flashblade-credentials-rotator"
+description = "Python Package to rotate Pure Storage FlashBlade Object Store Credentials"
+authors = [
+    { name = "Harrison AI", email = "platform@harrison.ai" }
+    ]
+requires-python = ">=3.10"
+dynamic = ["version"]
+readme = "README.md"
+
+dependencies = [
+    "click>=8.1.3",
+    "py-pure-client>=1.29.0",
+    # check this version
+    "kubernetes>=25.3.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+rotate = "pkg.cli:rotate"
+
+[build-system]
+requires = ["setuptools>=65.3.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
+addopts = [
+    "--log-cli-level=DEBUG",
+    "--cov-report",
+    "term-missing",
+    "--cov=src/",
+]
+filterwarnings = ["ignore::pytest.PytestCacheWarning"]
+
+[tool.coverage.run]
+source = ["src"]

@@ -1,0 +1,8 @@
+fb_url: 10.16.3.201
+api_token: pytest
+access_key_lifetime: 1800
+access_key_lifetime_buffer: 600
+access_key_age_variance: 60
+interesting_object_accounts:
+  - mock_hai
+credentials_output_path: /output/credentials.json

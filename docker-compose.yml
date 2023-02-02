@@ -1,0 +1,29 @@
+version: "3.7"
+
+services:
+
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - '.:/app'
+    working_dir: '/app'
+    entrypoint: []
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PYTHONUNBUFFERED: 1
+    entrypoint: []
+    volumes:
+      - './config.yml:/config.yml'
+      - './output:/output'
+    command:
+      - rotate
+
+

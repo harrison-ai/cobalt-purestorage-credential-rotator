@@ -1,0 +1,16 @@
+log_level: INFO
+fb_url: 10.10.10.10
+api_token: XXXX
+interesting_object_accounts:
+  - account-one
+  - account-two
+excluded_user_names:
+  - user-one
+k8s_mode: True
+credentials_output_path: /output/credentials.json
+access_key_min_age: 43200
+access_key_age_variance: 900
+k8s_namespace: default
+k8s_secret_name: secret-name
+k8s_secret_key: data
+kubeconfig: ~/.kubeconfig
