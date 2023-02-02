@@ -3,14 +3,13 @@
 import os
 from unittest.mock import patch
 
-import pkg.config
-from pkg.config import config
+from cobalt_purestorage.configuration import Settings, config
 
 
 def test_config():
     """Test that configuration values are being set"""
 
-    assert isinstance(config, pkg.config.Settings)
+    assert isinstance(config, Settings)
 
 
 @patch.dict(os.environ, {"ACCESS_KEY_MIN_AGE": "3600"})
@@ -20,6 +19,6 @@ def test_env_var_config():
     from env vars
     """
 
-    pytest_config = pkg.config.Settings()
+    pytest_config = Settings()
     assert pytest_config.access_key_min_age == 3600
     assert pytest_config.interesting_object_accounts == {"pytest-one", "pytest-two"}

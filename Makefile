@@ -22,10 +22,13 @@ clean: clean-build clean-pyc clean-test
 build-docker:
 	docker compose build
 
+fmt: .env
+	docker compose run --rm dev ./scripts/check.sh
+
 test: .env
 	docker compose run --rm dev ./scripts/test.sh
 
-shell:
+shell: .env
 	docker compose run --rm --entrypoint='' dev /bin/bash
 
 rotate:
@@ -33,9 +36,6 @@ rotate:
 
 down:
 	docker compose down
-
-fmt:
-	docker compose run --rm dev ./scripts/check.sh
 
 .env:
 	touch .env

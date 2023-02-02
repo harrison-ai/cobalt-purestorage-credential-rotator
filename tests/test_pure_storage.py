@@ -6,7 +6,7 @@ import pytest
 import requests
 from pypureclient.flashblade import Client
 
-from pkg.pure_storage import PureStorageFlashBlade
+from cobalt_purestorage.pure_storage import PureStorageFlashBlade
 
 
 def mock_api_response(param):
@@ -29,9 +29,9 @@ def mock_api_response(param):
     return resp
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
-@patch("pkg.pure_storage.Client")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
+@patch("cobalt_purestorage.pure_storage.Client")
 def test_init_ok(mock):
     """Test the class initialisation."""
 
@@ -41,8 +41,8 @@ def test_init_ok(mock):
     assert isinstance(fb, PureStorageFlashBlade)
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
 def test_init_conn_failure():
     """Test the class initialisation error handing
     where there is a connection failure.
@@ -52,9 +52,9 @@ def test_init_conn_failure():
         fb = PureStorageFlashBlade()
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
-@patch("pkg.pure_storage.requests.get")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
+@patch("cobalt_purestorage.pure_storage.requests.get")
 def test_init_pure_failure(mock):
     """Test the class initialisation error handing
     where the Py Pure Client errors.
@@ -64,9 +64,9 @@ def test_init_pure_failure(mock):
         fb = PureStorageFlashBlade()
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
-@patch("pkg.pure_storage.Client")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
+@patch("cobalt_purestorage.pure_storage.Client")
 def test_get_object_store_accounts(mock):
     """Test the get_object_store_accounts method."""
 
@@ -84,9 +84,9 @@ def test_get_object_store_accounts(mock):
     assert len(result) == 20
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
-@patch("pkg.pure_storage.Client")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
+@patch("cobalt_purestorage.pure_storage.Client")
 def test_get_object_store_users(mock):
     """Test the get_object_store_users method."""
 
@@ -104,9 +104,9 @@ def test_get_object_store_users(mock):
     assert len(result) == 20
 
 
-@patch("pkg.pure_storage.config.fb_url", "10.10.10.10")
-@patch("pkg.pure_storage.config.api_token", "mock-token")
-@patch("pkg.pure_storage.Client")
+@patch("cobalt_purestorage.configuration.config.fb_url", "10.10.10.10")
+@patch("cobalt_purestorage.configuration.config.api_token", "mock-token")
+@patch("cobalt_purestorage.pure_storage.Client")
 def test_get_object_store_access_keys(mock):
     """Test the gget_object_store_access_keys method."""
 

@@ -6,9 +6,9 @@ import time
 from base64 import urlsafe_b64encode
 from datetime import datetime, timedelta
 
-from pkg.config import config
-from pkg.k8s import K8S
-from pkg.pure_storage import PureStorageFlashBlade
+from cobalt_purestorage.configuration import config
+from cobalt_purestorage.k8s import K8S
+from cobalt_purestorage.pure_storage import PureStorageFlashBlade
 
 logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)

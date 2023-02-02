@@ -7,7 +7,7 @@ import time
 import pytest
 import yaml
 
-import pkg.config as config
+import cobalt_purestorage.configuration as configuration
 
 
 @pytest.fixture

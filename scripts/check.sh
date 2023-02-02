@@ -2,11 +2,28 @@
 
 set -eu
 
-echo "formatting with black.."
-black .
+CI=${CI:-false}
 
-echo "running isort.."
-isort .
+if [[ ${CI,,} == "true" ]]
+then
+    echo "checking formatting with black.."
+    black --check .
 
-echo "running pycln.."
-pycln .
+    echo "checking isort.."
+    isort . -c
+
+    echo "checking pycln.."
+    pycln --check .
+
+else
+    
+    echo "formatting with black.."
+    black .
+
+    echo "running isort.."
+    isort .
+
+    echo "running pycln.."
+    pycln .
+
+fi

@@ -4,8 +4,8 @@ import logging
 
 from kubernetes import client, config
 
-from pkg.config import config
-from pkg.logging_utils import format_stacktrace
+from cobalt_purestorage.configuration import config
+from cobalt_purestorage.logging_utils import format_stacktrace
 
 logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)

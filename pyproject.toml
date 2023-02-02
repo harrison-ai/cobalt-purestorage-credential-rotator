@@ -1,6 +1,6 @@
 [project]
-name = "flashblade-credentials-rotator"
-description = "Python Package to rotate Pure Storage FlashBlade Object Store Credentials"
+name = "cobalt-purestorage"
+description = "Python Package to rotate PureStorage FlashBlade Object Store Credentials"
 authors = [
     { name = "Harrison AI", email = "platform@harrison.ai" }
     ]
@@ -26,8 +26,11 @@ dev = [
     "pytest-cov>=4.0.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["cobalt_purestorage"]
+
 [project.scripts]
-rotate = "pkg.cli:rotate"
+rotate = "cli:rotate"
 
 [build-system]
 requires = ["setuptools>=65.3.0"]
@@ -41,9 +44,12 @@ addopts = [
     "--log-cli-level=INFO",
     "--cov-report",
     "term-missing",
-    "--cov=src/",
+    "--cov=cobalt_purestorage/",
 ]
 filterwarnings = ["ignore::pytest.PytestCacheWarning"]
 
 [tool.coverage.run]
-source = ["src"]
+source = ["cobalt_purestorage"]
+
+[tool.isort]
+profile = "black"

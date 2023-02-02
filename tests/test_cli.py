@@ -4,12 +4,12 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-import pkg.cli as cli
+import cobalt_purestorage.cli as cli
 
 
 #  https://github.com/pallets/click/issues/824#issuecomment-562581313
 #  for caplog workaround
-@patch("pkg.cli.rotator.main")
+@patch("cobalt_purestorage.cli.rotator.main")
 def test_rotate(mock, caplog):
     caplog.set_level(1000)
 

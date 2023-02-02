@@ -4,8 +4,8 @@ import logging
 
 import click
 
-import pkg.rotator as rotator
-from pkg.config import config
+import cobalt_purestorage.rotator as rotator
+from cobalt_purestorage.configuration import config
 
 logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)
