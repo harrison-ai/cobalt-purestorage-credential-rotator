@@ -22,7 +22,7 @@ clean: clean-build clean-pyc clean-test
 build-docker:
 	docker compose build
 
-test:
+test: .env
 	docker compose run --rm dev ./scripts/test.sh
 
 shell:
@@ -36,3 +36,6 @@ down:
 
 fmt:
 	docker compose run --rm dev ./scripts/check.sh
+
+.env:
+	touch .env
