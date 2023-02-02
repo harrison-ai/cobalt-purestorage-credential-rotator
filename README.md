@@ -1,0 +1,1 @@
+# Cobalt Pure Storage Credential Rotator
