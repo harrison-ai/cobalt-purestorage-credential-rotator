@@ -1,13 +1,12 @@
 """ Test Rotater Module """
 
-# import os
 from datetime import datetime
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
 
 import pytest
 
+# import pkg.config as config
 import pkg.rotator as rotator
-from pkg.config import Config
 
 
 def test_base64():
@@ -18,13 +17,13 @@ def test_base64():
     assert result == "cHl0ZXN0"
 
 
-@patch("pkg.config.Config.access_key_min_age", 900)
-@patch("pkg.config.Config.access_key_age_variance", 60)
+@patch("pkg.config.config.access_key_min_age", 900)
+@patch("pkg.config.config.access_key_age_variance", 60)
 @patch("pkg.rotator.datetime")
 def test_generate_aws_credentials(mock_dt, mock_credentials):
     """Test the generate_aws_credentials function."""
 
-    mock_dt.utcnow.return_value = datetime(2000, 1, 1)
+    mock_dt.utcnow.return_value = datetime(2000, 1, 1, 0, 0, 0)
 
     result = rotator.generate_aws_credentials(mock_credentials)
 
@@ -37,8 +36,8 @@ def test_generate_aws_credentials(mock_dt, mock_credentials):
     assert expiration == datetime(2000, 1, 1, 0, 23, 30)
 
 
-@patch("pkg.rotator.Config.access_key_min_age", 3600)
-@patch("pkg.rotator.Config.access_key_age_variance", 10)
+@patch("pkg.rotator.config.access_key_min_age", 3600)
+@patch("pkg.rotator.config.access_key_age_variance", 10)
 @pytest.mark.parametrize(
     "mock_keys", [(3500, True), (3600, False), (3700, False)], indirect=True
 )
@@ -48,7 +47,7 @@ def test_key_too_recent(mock_keys):
     assert rotator.key_too_recent(mock_keys[0]) == mock_keys[1]
 
 
-@patch("pkg.rotator.Config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
+@patch("pkg.rotator.config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
 def test_get_interesting_accounts(mock_data):
     """Test the get_interesting_accounts function."""
 
@@ -63,8 +62,8 @@ def test_get_interesting_accounts(mock_data):
 
 
 #  fixme:  paarametrise this test to include no excluded users
-@patch("pkg.rotator.Config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
-@patch("pkg.rotator.Config.excluded_user_names", '["mock_ana/two"]')
+@patch("pkg.rotator.config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
+@patch("pkg.rotator.config.excluded_user_names", '["mock_ana/two"]')
 def test_get_interesting_users(mock_data):
     """Test the get_interesting_users function."""
 
@@ -88,8 +87,8 @@ def test_get_interesting_users(mock_data):
     ]
 
 
-@patch("pkg.rotator.Config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
-@patch("pkg.rotator.Config.excluded_user_names", '["mock_ana/two"]')
+@patch("pkg.rotator.config.interesting_object_accounts", '["mock_hai", "mock_ana"]')
+@patch("pkg.rotator.config.excluded_user_names", '["mock_ana/two"]')
 def test_get_keys_per_user(mock_data):
     """Test the get_keys_per_user function."""
 
@@ -108,10 +107,10 @@ def test_get_keys_per_user(mock_data):
 def test_update_credentials(mock_update_local, mock_update_k8s):
     """Test the update_credentials function."""
 
-    with patch("pkg.rotator.Config.k8s_mode", False):
+    with patch("pkg.rotator.config.k8s_mode", False):
         rotator.update_credentials({})
 
-    with patch("pkg.rotator.Config.k8s_mode", True):
+    with patch("pkg.rotator.config.k8s_mode", True):
         rotator.update_credentials({})
 
     mock_update_local.assert_called_once()
@@ -120,9 +119,9 @@ def test_update_credentials(mock_update_local, mock_update_k8s):
     mock_update_k8s.assert_called_with({})
 
 
-@patch("pkg.config.Config.k8s_namespace", "pytest")
-@patch("pkg.config.Config.k8s_secret_name", "secret")
-@patch("pkg.config.Config.k8s_secret_key", "data")
+@patch("pkg.config.config.k8s_namespace", "pytest")
+@patch("pkg.config.config.k8s_secret_name", "secret")
+@patch("pkg.config.config.k8s_secret_key", "data")
 @patch("pkg.rotator.K8S")
 def test_update_k8s(mock):
     """Test the update_k8s function"""
@@ -136,7 +135,7 @@ def test_update_k8s(mock):
     )
 
 
-@patch("pkg.config.Config.credentials_output_path", "/out.json")
+@patch("pkg.config.config.credentials_output_path", "/out.json")
 @patch("builtins.open", new_callable=mock_open)
 def test_update_local(mock):
     """Test the update_local function"""
@@ -147,9 +146,9 @@ def test_update_local(mock):
     handle.write.assert_called_once_with('{"pytest": "pytest"}')
 
 
-@patch("pkg.rotator.Config.access_key_min_age", 3600)
-@patch("pkg.rotator.Config.access_key_age_variance", 90)
-@patch("pkg.rotator.Config.k8s_mode", True)
+@patch("pkg.rotator.config.access_key_min_age", 3600)
+@patch("pkg.rotator.config.access_key_age_variance", 90)
+@patch("pkg.rotator.config.k8s_mode", True)
 @patch("pkg.rotator.PureStorageFlashBlade")
 @patch("pkg.rotator.get_interesting_users")
 @patch("pkg.rotator.update_k8s")

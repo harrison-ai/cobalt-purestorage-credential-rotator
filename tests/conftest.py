@@ -1,6 +1,5 @@
 """ Pytest Setup Module """
 
-import json
 import random
 import string
 import time
@@ -13,7 +12,6 @@ import pkg.config as config
 
 @pytest.fixture
 def mock_credentials():
-
     creds = {"name": "pytest", "access_key": "pytest", "secret_access_key": "pytest"}
 
     return creds
@@ -21,7 +19,6 @@ def mock_credentials():
 
 @pytest.fixture
 def mock_data():
-
     with open("tests/fixtures/mock-data.yml", "r") as f:
         data = yaml.safe_load(f)
 
@@ -32,7 +29,6 @@ def mock_data():
     ts = int(time.time())
 
     for account in data["accounts"]:
-
         account_dict = {
             "name": account["name"],
             "id": account["id"],
@@ -49,7 +45,6 @@ def mock_data():
         accounts.append(account_dict)
 
         for user in account["users"]:
-
             user_dict = {
                 "name": user["name"],
                 "id": user["id"],
@@ -67,11 +62,10 @@ def mock_data():
 
             if user["access_keys"]:
                 for access_key in user["access_keys"]:
-
                     created = int((ts - access_key["age"]) * 1000)
 
-                    r = "".join(random.choices(string.ascii_uppercase, k=38))
-                    key = f"PSFB{r}"
+                    r = "".join(random.choices(string.ascii_uppercase, k=31))
+                    key = f"PSFB{r}EXAMPLE"
 
                     user_access_key_dict = {
                         "id": None,
@@ -104,7 +98,6 @@ def mock_data():
 
 @pytest.fixture
 def mock_keys(request):
-
     created_at = (int(time.time()) - request.param[0]) * 1000
 
     keys = [

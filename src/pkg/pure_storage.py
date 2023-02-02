@@ -1,19 +1,18 @@
-"""  Pure Storage FlashBlade Module """
+"""  PureStorage FlashBlade Module """
 
 import logging
 
-import urllib3
 import requests
+import urllib3
 from pypureclient.exceptions import PureError
 from pypureclient.flashblade import Client, ObjectStoreAccessKeyPost
 
-from pkg.config import Config
+from pkg.config import config
 from pkg.logging_utils import format_stacktrace
-
 
 urllib3.disable_warnings()
 
-logging.basicConfig(level=Config.log_level)
+logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)
 
 
@@ -21,9 +20,8 @@ class PureStorageFlashBlade:
     """Service class for the PureStorage FlashBlade API"""
 
     def __init__(self):
-
         logger.debug("Istantiating PureStorageFlashBlade instance")
-        client = self._create_client(Config.fb_url, Config.api_token)
+        client = self._create_client(config.fb_url, config.api_token)
 
         if client is None:
             raise RuntimeError("could not istantiate Pure client")
@@ -53,7 +51,6 @@ class PureStorageFlashBlade:
         kwargs = {"limit": limit}
 
         while True:
-
             logger.debug("in function")
 
             resp = self.client.get_object_store_accounts(**kwargs).to_dict()
@@ -78,7 +75,6 @@ class PureStorageFlashBlade:
         kwargs = {"limit": limit}
 
         while True:
-
             resp = self.client.get_object_store_users(**kwargs).to_dict()
 
             for user in resp["items"]:
@@ -99,7 +95,6 @@ class PureStorageFlashBlade:
         kwargs = {"limit": limit}
 
         while True:
-
             resp = self.client.get_object_store_access_keys(**kwargs).to_dict()
 
             for key in resp["items"]:
@@ -121,7 +116,6 @@ class PureStorageFlashBlade:
         ).to_dict()
 
         if resp["status_code"] == 200:
-
             return resp["items"][0]
 
         print("an error occured creating a key...")
@@ -133,7 +127,6 @@ class PureStorageFlashBlade:
 
         resp = self.client.delete_object_store_access_keys(names=key_names).to_dict()
         if resp["status_code"] == 200:
-
             return
 
         print("an error occured deleting a key...")

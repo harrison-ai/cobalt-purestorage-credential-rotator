@@ -23,7 +23,7 @@ build-docker:
 	docker compose build
 
 test:
-	docker compose run --rm dev ./scripts/run-tests.sh
+	docker compose run --rm dev ./scripts/test.sh
 
 shell:
 	docker compose run --rm --entrypoint='' dev /bin/bash
@@ -33,3 +33,6 @@ rotate:
 
 down:
 	docker compose down
+
+fmt:
+	docker compose run --rm dev ./scripts/check.sh

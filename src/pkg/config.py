@@ -1,33 +1,31 @@
 """ Config Module """
 
-import os
 
 import yaml
+from pydantic import BaseSettings, Field
 
 
-class Config:
-    """Global configuration class"""
-
-    _CONFIG_FILE = os.getenv("CONFIG_FILE", default="config.yml")
-
-    cfg = {}
-
-    if os.path.exists(_CONFIG_FILE):
-        with open(_CONFIG_FILE, "r") as f:
-            cfg = yaml.safe_load(f)
-
-    log_level = cfg.get("log_level", "INFO").upper()
-    fb_url = cfg.get("fb_url", None)
-    api_token = cfg.get("api_token", None)
-    excluded_user_names = cfg.get("excluded_user_names", [])
-    interesting_object_accounts = cfg.get("interesting_object_accounts", [])
-    k8s_mode = cfg.get("k8s_mode", False)
-    credentials_output_path = cfg.get(
-        "credentials_output_path", "/output/credentials.json"
+class Settings(BaseSettings):
+    log_level: str = Field("INFO", env="LOG_LEVEL")
+    fb_url: str = Field(..., env="FB_URL")
+    api_token: str = Field(..., env="API_TOKEN")
+    excluded_user_names: set[str] = Field(None, env="EXCLUDED_USER_NAMES")
+    interesting_object_accounts: set[str] = Field(
+        None, env="INTERESTING_OBJECT_ACCOUNTS"
     )
-    access_key_min_age = cfg.get("access_key_min_age", 43200)
-    access_key_age_variance = cfg.get("access_key_age_variance", 900)
-    k8s_namespace = cfg.get("k8s_namespace", "default")
-    k8s_secret_name = cfg.get("k8s_secret_name", None)
-    k8s_secret_key = cfg.get("k8s_secret_key", None)
-    kubeconfig = cfg.get("kubeconfig", None)
+    k8s_mode: bool = Field(False, env="K8S_MODE")
+    credentials_output_path: str = Field(
+        "/output/credentials.json", env="CREDENTIALS_OUTPUT_PATH"
+    )
+    access_key_min_age: int = Field(43200, env="ACCESS_KEY_MIN_AGE")
+    access_key_age_variance: int = Field(900, env="ACCESS_KEY_AGE_VARIANCE")
+    k8s_namespace: str = Field(None, env="K8S_NAMESPACE")
+    k8s_secret_name: str = Field(None, env="K8S_SECRET_NAME")
+    k8s_secret_key: str = Field(None, env="K8S_SECRET_KEY")
+    kubeconfig: str = Field(None, env="KUBECONFIG")
+
+    class Config:
+        case_sensitive = True
+
+
+config = Settings()
