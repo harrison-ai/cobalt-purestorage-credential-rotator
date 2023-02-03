@@ -19,10 +19,10 @@ clean-test: ## remove test and coverage artifacts
 
 clean: clean-build clean-pyc clean-test
 
-build-dev: clean
+build-dev:
 	docker compose build dev
 
-build-app: clean
+build-app:
 	docker compose build app
 
 fmt:
