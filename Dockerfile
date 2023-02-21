@@ -21,7 +21,6 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update \
     && apt-get install \
     ca-certificates \
-    tree \
     --no-install-recommends -y
 
 COPY --from=builder /app/wheels/* /app/wheels/

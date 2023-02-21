@@ -1,3 +1,8 @@
+IMAGE_NAME ?= harrisonai/cobalt-purestorage-credentials-rotator
+IMAGE_TAG ?= $(shell git rev-parse HEAD | cut -c1-8)
+
+.EXPORT_ALL_VARIABLES:
+
 clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
@@ -43,3 +48,12 @@ smoketest:
 down:
 	docker compose down --remove-orphans --volumes
 
+publish:
+	docker tag $(IMAGE_NAME):local $(IMAGE_NAME):$(IMAGE_TAG)
+	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+
+publish-release:
+	docker tag $(IMAGE_NAME):local $(IMAGE_NAME):$(IMAGE_TAG)
+	docker tag $(IMAGE_NAME):local $(IMAGE_NAME):latest
+	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+	docker push $(IMAGE_NAME):latest
