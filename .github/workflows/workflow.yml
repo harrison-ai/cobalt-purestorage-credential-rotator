@@ -3,8 +3,8 @@ name: CI Workflow
 on:
   push:
 
-release:
-    types: [published]
+  release:
+      types: [published]
 
 env:
   CI: true
