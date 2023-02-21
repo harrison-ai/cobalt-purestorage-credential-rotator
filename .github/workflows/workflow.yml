@@ -46,9 +46,12 @@ jobs:
         run: make publish
         if: github.event_name == 'push'
         env:
-          IMAGE_NAME: env.DOCKERHUB_REPO
-          IMAGE_TAG: env.SHORT_SHA
+          IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
+          IMAGE_TAG: ${{ env.SHORT_SHA }}
 
       - name: publish docker image - release
         run: make publish-release
         if: github.event_name == 'release'
+        env:
+          IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
+          #IMAGE_TAG: ${{ env.SHORT_SHA }}
