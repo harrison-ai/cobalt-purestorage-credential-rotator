@@ -23,46 +23,6 @@ def base64(input):
     return b64_bytes.decode("utf-8")
 
 
-def get_interesting_accounts(all_accounts):
-    """Given a list of accounts, return only those of interest"""
-
-    interesting_accounts = []
-
-    if config.interesting_object_accounts:
-        interesting_accounts = [
-            x for x in all_accounts if x["name"] in config.interesting_object_accounts
-        ]
-
-    return interesting_accounts
-
-
-def get_interesting_users(interesting_accounts, all_users):
-    """Given a list of users, return only those of interest."""
-
-    interesting_account_ids = [x["id"] for x in interesting_accounts]
-    excluded_user_ids = [
-        x["id"] for x in all_users if x["name"] in config.excluded_user_names
-    ]
-    interesting_users = [
-        x
-        for x in all_users
-        if x["account"]["id"] in interesting_account_ids
-        if x["id"] not in excluded_user_ids
-    ]
-
-    return interesting_users
-
-
-def get_keys_per_user(user_id, all_keys):
-    """Given a user id and a list of all access keys,
-    return the keys associated with the user.
-    """
-
-    ls = [x for x in all_keys if x["user"]["id"] == user_id]
-
-    return ls
-
-
 def key_too_recent(keys):
     """Given a list of keys,
     check if any are younger than minimum allowable age.
@@ -113,17 +73,17 @@ def generate_aws_credentials(credentials):
     return _d
 
 
-def update_credentials(refreshed_credentials):
+def update_credentials(refreshed_credentials, user_name):
     """Select the update method."""
 
     if config.k8s_mode:
-        update_k8s(refreshed_credentials)
+        update_k8s(refreshed_credentials, user_name)
 
     else:
-        update_local(refreshed_credentials)
+        update_local(refreshed_credentials, user_name)
 
 
-def update_k8s(refreshed_credentials):
+def update_k8s(refreshed_credentials, user_name):
     """Given a credentials dict, update the k8s secret."""
 
     encoded_secret_data = base64(json.dumps(refreshed_credentials))
@@ -135,57 +95,50 @@ def update_k8s(refreshed_credentials):
         config.k8s_secret_key,
         encoded_secret_data,
     )
+    logger.info(f"Updated k8s. User: {user_name}")
 
 
-def update_local(refreshed_credentials):
+def update_local(refreshed_credentials, user_name):
     """Given a credentials dict, write it out to the local filesystem."""
 
     with open(config.credentials_output_path, "w") as f:
         f.write(json.dumps(refreshed_credentials))
+    logger.info(f"Updated local credentials file. User: {user_name}")
 
 
 def main():
     """Main logic flow."""
 
+    if not config.interesting_users:
+        logger.error("No Interesting Users are configured, exiting...")
+        return
+
     fb = PureStorageFlashBlade()
 
-    # retrieve the data req'd from the flashblade
-    all_accounts = fb.get_object_store_accounts()
-    all_users = fb.get_object_store_users()
-    all_access_keys = fb.get_object_store_access_keys()
+    for user_name in config.interesting_users:
+        # check username is valid
+        if not fb.object_store_user_exists(user_name):
+            logger.error(f"User {user_name} does not appear to be a valid user...")
+            continue
 
-    #  filter out the unwanted users
-    interesting_accounts = get_interesting_accounts(all_accounts)
-    interesting_users = get_interesting_users(interesting_accounts, all_users)
-
-    if not interesting_users:
-        logger.warning("No interesting users found")
-
-    for user in interesting_users:
-        user_name = user["name"]
-        user_id = user["id"]
-        logger.info(f"Begin key operations. User: {user_name}")
-
-        # get the keys associated with the user
-        keys = get_keys_per_user(user_id, all_access_keys)
-
+        keys = fb.get_access_keys_for_user(user_name)
         if keys:
             # sort keys to identify the oldest key for deletion
             sorted_keys = sorted(keys, key=lambda d: d["created"])
+            # print(f"sorted: {sorted_keys}")
 
             # if existing key not too young create a new key
             if len(keys) == 1:
                 logger.info(f"One key found. User: {user_name}")
 
                 if not key_too_recent(keys):
-                    credentials = fb.post_object_store_access_keys(user_id)
+                    credentials = fb.post_object_store_access_keys(user_name)
                     if credentials:
                         logger.info(
                             f"New key created. User: {user_name}, Key: {credentials['name']}"
                         )
                         refreshed_credentials = generate_aws_credentials(credentials)
-                        update_credentials(refreshed_credentials)
-                        logger.info(f"Updated k8s. User: {user_name}")
+                        update_credentials(refreshed_credentials, user_name)
                 else:
                     logger.warning(f"Keys are too young, ignoring. User: {user_name}")
 
@@ -198,15 +151,14 @@ def main():
                     logger.info(
                         f"Oldest key deleted. User: {user_name}, Key: {sorted_keys[0]['name']}"
                     )
-                    credentials = fb.post_object_store_access_keys(user_id)
+                    credentials = fb.post_object_store_access_keys(user_name)
 
                     if credentials:
                         logger.info(
                             f"New key created. User: {user_name}, Key: {credentials['name']}"
                         )
                         refreshed_credentials = generate_aws_credentials(credentials)
-                        update_credentials(refreshed_credentials)
-                        logger.info(f"Updated k8s. User: {user_name}")
+                        update_credentials(refreshed_credentials, user_name)
 
                 else:
                     logger.warning(f"Keys are too young, ignoring. User: {user_name}")
@@ -218,12 +170,11 @@ def main():
         else:
             # no keys, create a new one
             logger.info(f"No keys found. User: {user_name}")
-            credentials = fb.post_object_store_access_keys(user_id)
+            credentials = fb.post_object_store_access_keys(user_name)
 
             if credentials:
                 logger.info(
                     f"New key created. User: {user_name}, Key: {credentials['name']}"
                 )
                 refreshed_credentials = generate_aws_credentials(credentials)
-                update_credentials(refreshed_credentials)
-                logger.info(f"Updated k8s. User: {user_name}")
+                update_credentials(refreshed_credentials, user_name)

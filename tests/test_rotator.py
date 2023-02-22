@@ -47,89 +47,21 @@ def test_key_too_recent(mock_keys):
     assert rotator.key_too_recent(mock_keys[0]) == mock_keys[1]
 
 
-@patch(
-    "cobalt_purestorage.configuration.config.interesting_object_accounts",
-    '["mock_hai", "mock_ana"]',
-)
-def test_get_interesting_accounts(mock_data):
-    """Test the get_interesting_accounts function."""
-
-    mock_accounts = mock_data["accounts"]
-
-    result = rotator.get_interesting_accounts(mock_accounts)
-    names = [x["name"] for x in result]
-
-    assert isinstance(result, list)
-    assert len(result) == 2
-    assert names == ["mock_hai", "mock_ana"]
-
-
-#  fixme:  paarametrise this test to include no excluded users
-@patch(
-    "cobalt_purestorage.configuration.config.interesting_object_accounts",
-    '["mock_hai", "mock_ana"]',
-)
-@patch(
-    "cobalt_purestorage.configuration.config.excluded_user_names", '["mock_ana/two"]'
-)
-def test_get_interesting_users(mock_data):
-    """Test the get_interesting_users function."""
-
-    mock_accounts = mock_data["accounts"]
-    mock_users = mock_data["users"]
-
-    interesting_accounts = rotator.get_interesting_accounts(mock_accounts)
-    result = rotator.get_interesting_users(interesting_accounts, mock_users)
-    names = [x["name"] for x in result]
-
-    assert isinstance(result, list)
-    assert len(result) == 7
-    assert names == [
-        "mock_hai/one",
-        "mock_hai/two",
-        "mock_hai/three",
-        "mock_hai/four",
-        "mock_hai/five",
-        "mock_ana/one",
-        "mock_ana/three",
-    ]
-
-
-@patch(
-    "cobalt_purestorage.configuration.config.interesting_object_accounts",
-    '["mock_hai", "mock_ana"]',
-)
-@patch(
-    "cobalt_purestorage.configuration.config.excluded_user_names", '["mock_ana/two"]'
-)
-def test_get_keys_per_user(mock_data):
-    """Test the get_keys_per_user function."""
-
-    mock_users = mock_data["users"]
-    mock_access_keys = mock_data["access_keys"]
-
-    for user in mock_users:
-        result = rotator.get_keys_per_user(user["id"], mock_access_keys)
-        assert len(result) == len(user["access_keys"])
-        for key in user["access_keys"]:
-            assert any(x["name"] == key["name"] for x in result)
-
-
 @patch("cobalt_purestorage.rotator.update_k8s")
 @patch("cobalt_purestorage.rotator.update_local")
 def test_update_credentials(mock_update_local, mock_update_k8s):
     """Test the update_credentials function."""
 
     with patch("cobalt_purestorage.configuration.config.k8s_mode", False):
-        rotator.update_credentials({})
+        rotator.update_credentials({}, "pytest")
 
     with patch("cobalt_purestorage.configuration.config.k8s_mode", True):
-        rotator.update_credentials({})
+        rotator.update_credentials({}, "pytest")
 
     mock_update_local.assert_called_once()
-    mock_update_local.assert_called_with({})
+    mock_update_local.assert_called_with({}, "pytest")
     mock_update_k8s.assert_called_once()
-    mock_update_k8s.assert_called_with({})
+    mock_update_k8s.assert_called_with({}, "pytest")
 
 
 @patch("cobalt_purestorage.configuration.config.k8s_namespace", "pytest")
@@ -140,7 +72,7 @@ def test_update_k8s(mock):
     """Test the update_k8s function"""
 
     k = mock.return_value
-    rotator.update_k8s({"pytest": "pytest"})
+    rotator.update_k8s({"pytest": "pytest"}, "pytest")
 
     k.update_secret.assert_called_once()
     k.update_secret.assert_called_with(
@@ -153,7 +85,7 @@ def test_update_k8s(mock):
 def test_update_local(mock):
     """Test the update_local function"""
 
-    rotator.update_local({"pytest": "pytest"})
+    rotator.update_local({"pytest": "pytest"}, "pytest")
     mock.assert_called_once_with("/out.json", "w")
     handle = mock()
     handle.write.assert_called_once_with('{"pytest": "pytest"}')
@@ -163,29 +95,13 @@ def test_update_local(mock):
 @patch("cobalt_purestorage.configuration.config.access_key_age_variance", 90)
 @patch("cobalt_purestorage.configuration.config.k8s_mode", True)
 @patch("cobalt_purestorage.rotator.PureStorageFlashBlade")
-@patch("cobalt_purestorage.rotator.get_interesting_users")
 @patch("cobalt_purestorage.rotator.update_k8s")
-@pytest.mark.parametrize(
-    "mock_data, index", [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)], indirect=["mock_data"]
-)
-def test_main_key_actions(
-    mock_k8s, mock_interesting_users, mock_fb, mock_data, index, mock_credentials
-):
+@pytest.mark.parametrize("index", [0, 1, 2, 3, 4])
+def test_main_key_actions(mock_k8s, mock_fb, index, mock_data):
     """This test runs multiple times, using one user dict from the mock_data fixture in each iteration
     The index value is used to select the user dict from the mock_data list
-    This parametrized test accepts the mock_data fixture as is by virtue of the indirect argument
-    The tuples in the decorator are requred to pass both the mock_data fixture and an index value into the test
-    The first tuple value isn't actually passed into the test.  The indirect arg means the mock_data fixture
-    is returned instead
     """
 
-    #  the function will take a user and find all associated keys
-    #  from the list of all available keys
-
-    #  all access keys
-    mock_access_keys = mock_data["access_keys"]
-
-    # the specific user we are teting against
     mock_user = mock_data["users"][index]
 
     # sort keys as per tested function so we can
@@ -194,40 +110,50 @@ def test_main_key_actions(
     if len(mock_user["access_keys"]) > 0:
         sorted_keys = sorted(mock_user["access_keys"], key=lambda d: d["created"])
 
-    #  the pytest expected result actions are embedded into the test data to assert against
-    expected_results = mock_user["pytest_expected_results"]
-
+    #   the pytest expected result actions are embedded into the test data to assert against
     #  convert to a set for easy comparison
     expected_results = set(mock_user["pytest_expected_results"])
 
     fb = mock_fb.return_value
-    fb.get_object_store_access_keys.return_value = mock_access_keys
-    fb.post_object_store_access_keys.return_value = mock_credentials
 
-    # we patch the get_interesting_users function so that we
-    # are only testing a single specified user - in real usage
-    # the function will loop over all users
-    mock_interesting_users.return_value = [mock_user]
+    with patch(
+        "cobalt_purestorage.configuration.config.interesting_users", [mock_user["name"]]
+    ):
+        # mock the response to indicate that the user does not exist
+        fb.object_store_user_exists.return_value = False
 
-    rotator.main()
+        rotator.main()
 
-    if expected_results == {"skip"}:
+        fb.object_store_user_exists.assert_called_with(mock_user["name"])
         fb.delete_object_store_access_keys.assert_not_called()
         fb.post_object_store_access_keys.assert_not_called()
 
-    if expected_results == {"post"}:
-        fb.delete_object_store_access_keys.assert_not_called()
-        fb.post_object_store_access_keys.assert_called_once()
-        fb.post_object_store_access_keys.assert_called_with(mock_user["id"])
-        mock_k8s.assert_called_once()
+        # mock the response to indicate that the user exists
+        fb.object_store_user_exists.return_value = True
+        # mock key response
+        fb.get_access_keys_for_user.return_value = mock_user["access_keys"]
 
-    if expected_results == {"delete", "post"}:
-        fb.delete_object_store_access_keys.assert_called_once()
-        fb.delete_object_store_access_keys.assert_called_with([sorted_keys[0]["name"]])
-        fb.post_object_store_access_keys.assert_called_once()
-        fb.post_object_store_access_keys.assert_called_with(mock_user["id"])
-        mock_k8s.assert_called_once()
+        rotator.main()
 
-    if expected_results == {"error"}:
-        fb.delete_object_store_access_keys.assert_not_called()
-        fb.post_object_store_access_keys.assert_not_called()
+        if expected_results == {"skip"}:
+            fb.delete_object_store_access_keys.assert_not_called()
+            fb.post_object_store_access_keys.assert_not_called()
+
+        if expected_results == {"post"}:
+            fb.delete_object_store_access_keys.assert_not_called()
+            fb.post_object_store_access_keys.assert_called_once()
+            fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
+            mock_k8s.assert_called_once()
+
+        if expected_results == {"delete", "post"}:
+            fb.delete_object_store_access_keys.assert_called_once()
+            fb.delete_object_store_access_keys.assert_called_with(
+                [sorted_keys[0]["name"]]
+            )
+            fb.post_object_store_access_keys.assert_called_once()
+            fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
+            mock_k8s.assert_called_once()
+
+        if expected_results == {"error"}:
+            fb.delete_object_store_access_keys.assert_not_called()
+            fb.post_object_store_access_keys.assert_not_called()

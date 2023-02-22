@@ -20,10 +20,12 @@ class PureStorageFlashBlade:
 
     def __init__(self):
         logger.debug("Instantiating FlashBlade Client")
-        self.client = self._create_client(config.fb_url, config.api_token)
+        self.client = self._create_client(
+            config.fb_url, config.api_token, config.fb_timeout
+        )
         logger.debug("FlashBlade Client instantiated OK")
 
-    def _create_client(self, url, token):
+    def _create_client(self, url, token, timeout):
         """Create the client"""
 
         with warnings.catch_warnings():
@@ -33,7 +35,7 @@ class PureStorageFlashBlade:
                 )
 
             try:
-                client = Client(url, api_token=token)
+                client = Client(url, api_token=token, timeout=timeout)
                 return client
 
             except requests.exceptions.ConnectionError:
@@ -44,11 +46,8 @@ class PureStorageFlashBlade:
                 logger.error(format_stacktrace())
                 raise RuntimeError("Could not instantiate FlashBlade Client")
 
-    def get_object_store_accounts(self, limit=10):
-        """Get all object store accounts, returning only the accounts"""
-
-        accounts = []
-        kwargs = {"limit": limit}
+    def object_store_user_exists(self, name):
+        "Given an Object Store User name, check if the user exists on the FB array"
 
         with warnings.catch_warnings():
             if not config.verify_fb_tls:
@@ -56,25 +55,19 @@ class PureStorageFlashBlade:
                     "ignore", urllib3.exceptions.InsecureRequestWarning
                 )
 
-            while True:
-                resp = self.client.get_object_store_accounts(**kwargs).to_dict()
+            filter = f'name="{name}"'
+            resp = self.client.get_object_store_users(filter=filter).to_dict()
 
-                for account in resp["items"]:
-                    accounts.append(account)
+        if resp["status_code"] == 200:
+            if resp["items"]:
+                return True
 
-                if resp["continuation_token"] is not None:
-                    kwargs["continuation_token"] = resp["continuation_token"]
+        return False
 
-                else:
-                    break
-
-            return accounts
-
-    def get_object_store_users(self, limit=10):
-        """Get all object store users, returning only the users"""
-
-        users = []
-        kwargs = {"limit": limit}
+    def get_access_keys_for_user(self, name):
+        """Given an Object Store User name,
+        return the keys associated that that user
+        """
 
         with warnings.catch_warnings():
             if not config.verify_fb_tls:
@@ -82,47 +75,16 @@ class PureStorageFlashBlade:
                     "ignore", urllib3.exceptions.InsecureRequestWarning
                 )
 
-            while True:
-                resp = self.client.get_object_store_users(**kwargs).to_dict()
+            filter = f'user.name="{name}"'
+            resp = self.client.get_object_store_access_keys(filter=filter).to_dict()
+            print(resp)
 
-                for user in resp["items"]:
-                    users.append(user)
+        if resp["status_code"] == 200:
+            return resp["items"]
 
-                if resp["continuation_token"] is not None:
-                    kwargs["continuation_token"] = resp["continuation_token"]
+        return None
 
-                else:
-                    break
-
-            return users
-
-    def get_object_store_access_keys(self, limit=10):
-        """Get all object store keys, returning only the keys"""
-
-        keys = []
-        kwargs = {"limit": limit}
-
-        with warnings.catch_warnings():
-            if not config.verify_fb_tls:
-                warnings.simplefilter(
-                    "ignore", urllib3.exceptions.InsecureRequestWarning
-                )
-
-            while True:
-                resp = self.client.get_object_store_access_keys(**kwargs).to_dict()
-
-                for key in resp["items"]:
-                    keys.append(key)
-
-                if resp["continuation_token"] is not None:
-                    kwargs["continuation_token"] = resp["continuation_token"]
-
-                else:
-                    break
-
-            return keys
-
-    def post_object_store_access_keys(self, user_id):
+    def post_object_store_access_keys(self, user_name):
         """Create a new object store access key"""
 
         with warnings.catch_warnings():
@@ -132,13 +94,15 @@ class PureStorageFlashBlade:
                 )
 
             resp = self.client.post_object_store_access_keys(
-                object_store_access_key=ObjectStoreAccessKeyPost(user={"id": user_id})
+                object_store_access_key=ObjectStoreAccessKeyPost(
+                    user={"name": user_name}
+                )
             ).to_dict()
 
         if resp["status_code"] == 200:
             return resp["items"][0]
 
-        logger.error(f"An error occured creating a key for user {user_id}")
+        logger.error(f"An error occured creating a key for user {user_name}")
         return None
 
     def delete_object_store_access_keys(self, key_names):
@@ -155,7 +119,7 @@ class PureStorageFlashBlade:
             ).to_dict()
 
         if resp["status_code"] == 200:
-            return
+            return True
 
         logger.error(f"An error occured deleting keys {key_names}")
-        return None
+        return False
