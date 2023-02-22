@@ -3,7 +3,6 @@
 import random
 import string
 import time
-
 from unittest.mock import patch
 
 import pytest
@@ -14,15 +13,19 @@ import cobalt_purestorage.configuration as configuration
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_fb_url():
-
     with patch("cobalt_purestorage.configuration.config.fb_url", "169.254.99.99"):
         yield
 
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_api_token():
-
     with patch("cobalt_purestorage.configuration.config.api_token", "mock-token"):
+        yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mock_fb_timeout():
+    with patch("cobalt_purestorage.configuration.config.fb_timeout", 1):
         yield
 
 

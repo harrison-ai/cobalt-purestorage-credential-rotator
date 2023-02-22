@@ -96,8 +96,11 @@ def test_update_local(mock):
 @patch("cobalt_purestorage.configuration.config.k8s_mode", True)
 @patch("cobalt_purestorage.rotator.PureStorageFlashBlade")
 @patch("cobalt_purestorage.rotator.update_k8s")
-@pytest.mark.parametrize("index", [0, 1, 2, 3, 4])
-def test_main_key_actions(mock_k8s, mock_fb, index, mock_data):
+@pytest.mark.parametrize(
+    "index,user_exists",
+    [(0, True), (1, True), (2, True), (3, True), (4, True), (0, False)],
+)
+def test_main_key_actions(mock_k8s, mock_fb, index, user_exists, mock_data):
     """This test runs multiple times, using one user dict from the mock_data fixture in each iteration
     The index value is used to select the user dict from the mock_data list
     """
@@ -116,44 +119,56 @@ def test_main_key_actions(mock_k8s, mock_fb, index, mock_data):
 
     fb = mock_fb.return_value
 
+    fb.get_access_keys_for_user.return_value = "xx"
+
     with patch(
         "cobalt_purestorage.configuration.config.interesting_users", [mock_user["name"]]
     ):
-        # mock the response to indicate that the user does not exist
-        fb.object_store_user_exists.return_value = False
-
-        rotator.main()
-
-        fb.object_store_user_exists.assert_called_with(mock_user["name"])
-        fb.delete_object_store_access_keys.assert_not_called()
-        fb.post_object_store_access_keys.assert_not_called()
-
-        # mock the response to indicate that the user exists
-        fb.object_store_user_exists.return_value = True
-        # mock key response
+        # mock the response to indicate wether the user exists
+        fb.object_store_user_exists.return_value = user_exists
         fb.get_access_keys_for_user.return_value = mock_user["access_keys"]
-
         rotator.main()
 
-        if expected_results == {"skip"}:
+        if user_exists == False:
+            fb.object_store_user_exists.assert_called_with(mock_user["name"])
             fb.delete_object_store_access_keys.assert_not_called()
             fb.post_object_store_access_keys.assert_not_called()
 
-        if expected_results == {"post"}:
-            fb.delete_object_store_access_keys.assert_not_called()
-            fb.post_object_store_access_keys.assert_called_once()
-            fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
-            mock_k8s.assert_called_once()
+        if user_exists == True:
+            fb.object_store_user_exists.assert_called_with(mock_user["name"])
 
-        if expected_results == {"delete", "post"}:
-            fb.delete_object_store_access_keys.assert_called_once()
-            fb.delete_object_store_access_keys.assert_called_with(
-                [sorted_keys[0]["name"]]
-            )
-            fb.post_object_store_access_keys.assert_called_once()
-            fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
-            mock_k8s.assert_called_once()
+            if expected_results == {"skip"}:
+                fb.delete_object_store_access_keys.assert_not_called()
+                fb.post_object_store_access_keys.assert_not_called()
+                mock_k8s.assert_not_called()
 
-        if expected_results == {"error"}:
-            fb.delete_object_store_access_keys.assert_not_called()
-            fb.post_object_store_access_keys.assert_not_called()
+            if expected_results == {"post"}:
+                fb.delete_object_store_access_keys.assert_not_called()
+                fb.post_object_store_access_keys.assert_called_once()
+                fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
+                mock_k8s.assert_called_once()
+
+            if expected_results == {"delete", "post"}:
+                fb.post_object_store_access_keys.assert_called_once()
+                fb.post_object_store_access_keys.assert_called_with(mock_user["name"])
+                fb.delete_object_store_access_keys.assert_called_once()
+                fb.delete_object_store_access_keys.assert_called_with(
+                    [sorted_keys[0]["name"]]
+                )
+                mock_k8s.assert_called_once()
+
+            if expected_results == {"error"}:
+                fb.delete_object_store_access_keys.assert_not_called()
+                fb.post_object_store_access_keys.assert_not_called()
+                mock_k8s.assert_not_called()
+
+
+@patch("cobalt_purestorage.configuration.config.interesting_users", set())
+@patch("cobalt_purestorage.rotator.PureStorageFlashBlade")
+def test_main_key_actions_no_users(mock_fb):
+    """Test main function when no interesting users are configured"""
+
+    fb = mock_fb.return_value
+    rotator.main()
+    fb.object_store_user_exists.assert_not_called()
+    fb.get_access_keys_for_user.assert_not_called()

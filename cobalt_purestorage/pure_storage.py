@@ -47,7 +47,9 @@ class PureStorageFlashBlade:
                 raise RuntimeError("Could not instantiate FlashBlade Client")
 
     def object_store_user_exists(self, name):
-        "Given an Object Store User name, check if the user exists on the FB array"
+        """Given an Object Store User name,
+        check if the user exists on the FB array
+        """
 
         with warnings.catch_warnings():
             if not config.verify_fb_tls:
@@ -55,14 +57,13 @@ class PureStorageFlashBlade:
                     "ignore", urllib3.exceptions.InsecureRequestWarning
                 )
 
-            filter = f'name="{name}"'
-            resp = self.client.get_object_store_users(filter=filter).to_dict()
+            resp = self.client.get_object_store_users(filter=f'name="{name}"').to_dict()
 
-        if resp["status_code"] == 200:
-            if resp["items"]:
-                return True
-
-        return False
+        if (status := resp.get("status_code")) != 200:
+            logger.error(
+                f"Failed to fetch object store users with status code {status}"
+            )
+        return bool(resp.get("items"))
 
     def get_access_keys_for_user(self, name):
         """Given an Object Store User name,
@@ -75,9 +76,9 @@ class PureStorageFlashBlade:
                     "ignore", urllib3.exceptions.InsecureRequestWarning
                 )
 
-            filter = f'user.name="{name}"'
-            resp = self.client.get_object_store_access_keys(filter=filter).to_dict()
-            print(resp)
+            resp = self.client.get_object_store_access_keys(
+                filter=f'user.name="{name}"'
+            ).to_dict()
 
         if resp["status_code"] == 200:
             return resp["items"]

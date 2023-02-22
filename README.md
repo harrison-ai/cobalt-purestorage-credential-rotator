@@ -99,16 +99,16 @@ ACCESS_KEY_AGE_VARIANCE=120
 
 ## Configuration
 
-Configuration is via Environment Variables.  See the `Settings` class in [configuration.py](cobalt_purestorage/configuration.py) for the full list of configuration items.  Certain items such as `interesting_object_accounts` are list types and the environment variable value should be a JSON encoded string.
+Configuration is via Environment Variables.  See `.env-sample` and the `Settings` class in [configuration.py](cobalt_purestorage/configuration.py) for the full list of configuration items and combinations.  Certain items such as `interesting_users` are list types and the environment variable value should be a JSON encoded string.
 
 ```bash
- INTERESTING_OBJECT_ACCOUNTS='{"foo","bar"}'
+ INTERESTING_USERS=[\"foo\",\"bar\"]
  ```
 
 
 ## Usage
 
-Once installed, configure the required environment variables and execute the `rotate-fb-creds` command
+Once installed, configure the required environment variables and execute the `rotate-fb-creds` command.
 
 
 ## Requirements

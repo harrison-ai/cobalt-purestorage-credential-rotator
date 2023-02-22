@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 def base64(input):
     """Given a string, return a base64 encoded string"""
 
-    in_bytes = input.encode("utf-8")
-    b64_bytes = urlsafe_b64encode(in_bytes)
+    b64_bytes = urlsafe_b64encode(input.encode("utf-8"))
 
     return b64_bytes.decode("utf-8")
 
@@ -116,29 +115,29 @@ def main():
     fb = PureStorageFlashBlade()
 
     for user_name in config.interesting_users:
+        logger.debug(f"Begin operations for user: {user_name}")
         # check username is valid
         if not fb.object_store_user_exists(user_name):
             logger.error(f"User {user_name} does not appear to be a valid user...")
             continue
 
-        keys = fb.get_access_keys_for_user(user_name)
-        if keys:
+        if keys := fb.get_access_keys_for_user(user_name):
+            logger.debug(f"Keys for user {user_name}: {keys}")
             # sort keys to identify the oldest key for deletion
             sorted_keys = sorted(keys, key=lambda d: d["created"])
-            # print(f"sorted: {sorted_keys}")
 
             # if existing key not too young create a new key
             if len(keys) == 1:
                 logger.info(f"One key found. User: {user_name}")
 
                 if not key_too_recent(keys):
-                    credentials = fb.post_object_store_access_keys(user_name)
-                    if credentials:
+                    if credentials := fb.post_object_store_access_keys(user_name):
                         logger.info(
                             f"New key created. User: {user_name}, Key: {credentials['name']}"
                         )
-                        refreshed_credentials = generate_aws_credentials(credentials)
-                        update_credentials(refreshed_credentials, user_name)
+                        update_credentials(
+                            generate_aws_credentials(credentials), user_name
+                        )
                 else:
                     logger.warning(f"Keys are too young, ignoring. User: {user_name}")
 
@@ -151,14 +150,13 @@ def main():
                     logger.info(
                         f"Oldest key deleted. User: {user_name}, Key: {sorted_keys[0]['name']}"
                     )
-                    credentials = fb.post_object_store_access_keys(user_name)
-
-                    if credentials:
+                    if credentials := fb.post_object_store_access_keys(user_name):
                         logger.info(
                             f"New key created. User: {user_name}, Key: {credentials['name']}"
                         )
-                        refreshed_credentials = generate_aws_credentials(credentials)
-                        update_credentials(refreshed_credentials, user_name)
+                        update_credentials(
+                            generate_aws_credentials(credentials), user_name
+                        )
 
                 else:
                     logger.warning(f"Keys are too young, ignoring. User: {user_name}")
@@ -170,11 +168,8 @@ def main():
         else:
             # no keys, create a new one
             logger.info(f"No keys found. User: {user_name}")
-            credentials = fb.post_object_store_access_keys(user_name)
-
-            if credentials:
+            if credentials := fb.post_object_store_access_keys(user_name):
                 logger.info(
                     f"New key created. User: {user_name}, Key: {credentials['name']}"
                 )
-                refreshed_credentials = generate_aws_credentials(credentials)
-                update_credentials(refreshed_credentials, user_name)
+                update_credentials(generate_aws_credentials(credentials), user_name)

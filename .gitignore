@@ -53,3 +53,5 @@ cover/
 
 #  This package
 .env
+.kubeconfig
+.credentials.json

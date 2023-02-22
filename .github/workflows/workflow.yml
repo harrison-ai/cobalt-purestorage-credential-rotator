@@ -11,7 +11,7 @@ env:
   DOCKERHUB_REPO: harrisonai/cobalt-purestorage-credentials-rotator
 
 jobs:
-  run-tests:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -54,4 +54,4 @@ jobs:
         if: github.event_name == 'release'
         env:
           IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
-          #IMAGE_TAG: ${{ env.SHORT_SHA }}
+          IMAGE_TAG: ${{ github.ref_name }}

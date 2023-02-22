@@ -2,7 +2,7 @@
 
 import logging
 
-from kubernetes import client, config
+import kubernetes
 
 from cobalt_purestorage.configuration import config
 from cobalt_purestorage.logging_utils import format_stacktrace
@@ -12,30 +12,34 @@ logger = logging.getLogger(__name__)
 
 
 class K8S:
-    def __init__(self):
-        if config.kubeconfig:
-            config.load_kube_config(config_file=config.kubeconfig)
+    """Service class for the kubernetes client"""
 
+    def __init__(self):
+        logger.debug("Instantiating Kubernetes Client")
+        self.v1 = self._create_client(config.kubeconfig)
+
+    def _create_client(self, kubeconfig):
+        """Create the kubernetes client"""
+
+        if kubeconfig:
+            kubernetes.config.load_kube_config(config_file=kubeconfig)
         else:
             try:
-                config.load_incluster_config()
+                kubernetes.config.load_incluster_config()
 
-            except config.config_exception.ConfigException as err:
+            except kubernetes.config.config_exception.ConfigException as err:
                 logger.error(format_stacktrace())
                 raise RuntimeError(err)
+
+        return kubernetes.client.CoreV1Api()
 
     def _secret_exist(self, namespace, secret):
         """Given a namespace and a secret name, check if the secret exists"""
 
-        v1 = client.CoreV1Api()
-        resp = v1.list_namespaced_secret(namespace)
-        logger.debug(resp)
-        secrets = [x.metadata.name for x in resp.items]
+        resp = self.v1.list_namespaced_secret(namespace).to_dict()
+        secrets = [x["metadata"]["name"] for x in resp["items"]]
 
-        if secret in secrets:
-            return True
-
-        return False
+        return secret in secrets
 
     def update_secret(self, namespace, secret_name, secret_key, secret_body):
         """update a pre-existing secret"""
@@ -43,20 +47,18 @@ class K8S:
         secret_exists = self._secret_exist(namespace, secret_name)
 
         if secret_exists:
-            v1 = client.CoreV1Api()
             body = {"data": {secret_key: secret_body}}
 
             try:
-                v1.patch_namespaced_secret(secret_name, namespace, body)
+                self.v1.patch_namespaced_secret(secret_name, namespace, body)
+                logger.info(
+                    f"Patched secret: Namespace: {namespace} Secret: {secret_name}"
+                )
 
-            except client.exceptions.ApiException as err:
+            except kubernetes.client.exceptions.ApiException as err:
                 logger.error(format_stacktrace())
                 raise RuntimeError("error updating k8s secret")
 
         else:
             logger.error("specified secret does not exist")
             raise ValueError("secret does not exist")
-
-        #  update it
-        # https://github.com/kubernetes-client/python/issues/618
-        # https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/#edit-secret
