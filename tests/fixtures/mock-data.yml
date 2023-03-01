@@ -1,0 +1,100 @@
+accounts:
+- name: mock_hai
+  id: ad77ce05-fc33-4e53-99d1-7a04ddc2733b
+  created: 1666312073000
+  users:
+    - name: mock_hai/one
+      id: 450d8606-d765-4e64-8a68-cceef0a6425b
+      created: 1667813698000
+      access_keys:
+      pytest_expected_results:
+        - post
+    - name: mock_hai/two
+      id: 3a5c7b84-aa48-4462-9462-b2f67fbd9e97
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+      pytest_expected_results:
+        - skip
+    - name: mock_hai/three
+      id: 91d88f8d-a4e6-4f40-a2df-01b64a39baa6
+      created: 1667813698000
+      access_keys:
+        - age: 3700
+          enabled: True
+      pytest_expected_results:
+        - post
+    - name: mock_hai/four
+      id: 5f0e2a1d-e489-4134-80ae-106c2aa1b241
+      created: 1667813698000
+      access_keys:
+        - age: 3700
+          enabled: True
+        - age: 7200
+          enabled: True
+      pytest_expected_results:
+        - delete
+        - post
+    - name: mock_hai/five
+      id: f475f2f4-c935-476b-a122-3c98b7b49cf8
+      created: 1667813698000
+      access_keys:
+        - age: 3700
+          enabled: True
+        - age: 7200
+          enabled: True
+        - age: 11000
+          enabled: True
+      pytest_expected_results:
+        - error
+
+- name: mock_ana
+  id: 3861e5f9-458e-4f27-8248-f75f73cd20b2
+  created: 1666312073000
+  users:
+    - name: mock_ana/one
+      id: 858ad80d-8e8f-42ba-b06d-d4fc699ddaad
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+    - name: mock_ana/two
+      id: 11490ef2-970b-46ac-bad1-69c5745ff23e
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+        - age: 7200
+          enabled: True
+    - name: mock_ana/three
+      id: db5ea3ad-4be5-4387-9a3f-4add26cda3b3
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+        - age: 7200
+          enabled: True
+        - age: 100000
+          enabled: True
+
+- name: mock_fake
+  id: 27332f2d-5917-4443-af47-b61b91865010
+  created: 1666312073000
+  users:
+    - name: mock_fake/one
+      id: 6de0d567-3a9a-4cf7-a1d1-091dbf58a704
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+        - age: 7200
+          enabled: True
+    - name: mock_fake/two
+      id: db50818c-a791-46a4-b30b-f5f9cb0d4841
+      created: 1667813698000
+      access_keys:
+        - age: 3500
+          enabled: True
+        - age: 7200
+          enabled: True
