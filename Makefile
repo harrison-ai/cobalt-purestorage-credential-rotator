@@ -1,4 +1,4 @@
-IMAGE_NAME ?= harrisonai/cobalt-purestorage-credentials-rotator
+IMAGE_NAME ?= ghcr.io/harrison-ai/cobalt-purestorage-credentials-rotator
 IMAGE_TAG ?= $(shell git rev-parse HEAD | cut -c1-8)
 
 .EXPORT_ALL_VARIABLES:

@@ -2,17 +2,21 @@ name: CI Workflow
 
 on:
   push:
-
+    branches:
+      - dockerhub-to-ghcr
   release:
       types: [published]
 
 env:
   CI: true
-  DOCKERHUB_REPO: harrisonai/cobalt-purestorage-credentials-rotator
+  IMAGE_REPO: ghcr.io/harrison-ai/cobalt-purestorage-credentials-rotator
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -36,22 +40,23 @@ jobs:
         run: echo "SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)" >> ${GITHUB_ENV}
         if: github.event_name != 'release'
 
-      - name: log into docker hub
+      - name: log into github container registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: publish docker image - non release
         run: make publish
         if: github.event_name == 'push'
         env:
-          IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
+          IMAGE_NAME: ${{ env.IMAGE_REPO }}
           IMAGE_TAG: ${{ env.SHORT_SHA }}
 
       - name: publish docker image - release
         run: make publish-release
         if: github.event_name == 'release'
         env:
-          IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
+          IMAGE_NAME: ${{ env.IMAGE_REPO }}
           IMAGE_TAG: ${{ github.ref_name }}
