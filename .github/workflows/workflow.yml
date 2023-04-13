@@ -2,8 +2,7 @@ name: CI Workflow
 
 on:
   push:
-    branches:
-      - dockerhub-to-ghcr
+
   release:
       types: [published]
 
