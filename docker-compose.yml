@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ${IMAGE_NAME:-harrisonai/cobalt-purestorage-credentials-rotator}:local
+    image: ${IMAGE_NAME:-ghcr.io/harrison-ai/cobalt-purestorage-credentials-rotator}:local
     entrypoint: []
     volumes:
       - './output:/output'
@@ -25,7 +25,7 @@ services:
       - rotate-fb-creds
 
   smoketest:
-    image: ${IMAGE_NAME:-harrisonai/cobalt-purestorage-credentials-rotator}:local
+    image: ${IMAGE_NAME:-ghcr.io/harrison-ai/cobalt-purestorage-credentials-rotator}:local
     entrypoint: []
     command:
       - smoketest
