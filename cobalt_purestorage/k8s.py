@@ -4,6 +4,8 @@ import logging
 
 import kubernetes
 
+import base64
+
 from cobalt_purestorage.configuration import config
 from cobalt_purestorage.logging_utils import format_stacktrace
 
@@ -59,6 +61,25 @@ class K8S:
                 logger.error(format_stacktrace())
                 raise RuntimeError("error updating k8s secret")
 
+        else:
+            logger.error("specified secret does not exist")
+            raise ValueError("secret does not exist")
+
+    def get_secret(self, namespace, secret_name, secret_key):
+        """get pre-existing secret"""
+
+        secret_exists = self._secret_exist(namespace, secret_name)
+
+        if secret_exists:
+            try:
+                data = self.v1.read_namespaced_secret(secret_name, namespace).data
+                decoded = base64.b64decode(data.get(secret_key)).decode("utf-8")
+                return decoded
+
+            except kubernetes.client.exceptions.ApiException:
+                logger.error(format_stacktrace())
+                raise RuntimeError("error getting k8s secret")
+            
         else:
             logger.error("specified secret does not exist")
             raise ValueError("secret does not exist")
