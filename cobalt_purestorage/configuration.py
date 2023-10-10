@@ -51,6 +51,12 @@ class Settings(BaseSettings):
         description="Minimum age of Access Keys in seconds",
     )
 
+    failure_mode_key_age: int = Field(
+        43200,
+        env="FAILURE_MODE_KEY_AGE",
+        description="In the case of API Failure, the amount of time to ",
+    )
+
     access_key_age_variance: int = Field(
         900,
         env="ACCESS_KEY_AGE_VARIANCE",
