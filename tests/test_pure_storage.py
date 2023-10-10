@@ -6,7 +6,7 @@ import pytest
 import requests
 from pypureclient.flashblade import Client
 
-from cobalt_purestorage.pure_storage import PureStorageFlashBlade
+from cobalt_purestorage.pure_storage import PureStorageFlashBlade, FBAPIError
 
 MOCK_FB_URL = "169.254.99.99"
 
@@ -84,7 +84,7 @@ def test_init_conn_failure(requests_mock):
         exc=requests.exceptions.ConnectTimeout,
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FBAPIError):
         fb = PureStorageFlashBlade()
 
 
@@ -103,7 +103,7 @@ def test_init_pure_failure(requests_mock):
     # mock that the api token is incorrect
     requests_mock.post(f"https://{MOCK_FB_URL}/api/login", status_code=401)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FBAPIError):
         fb = PureStorageFlashBlade()
 
 
