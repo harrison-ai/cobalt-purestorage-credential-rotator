@@ -7,6 +7,7 @@ import pytest
 
 import cobalt_purestorage.configuration as config
 import cobalt_purestorage.rotator as rotator
+from cobalt_purestorage.pure_storage import FBAPIError
 
 
 def test_base64():
@@ -34,6 +35,27 @@ def test_generate_aws_credentials(mock_dt, mock_credentials):
 
     expiration = datetime.fromisoformat(result["Expiration"].replace("Z", ""))
     assert expiration == datetime(2000, 1, 1, 0, 23, 30)
+
+
+@patch("cobalt_purestorage.configuration.config.failure_mode_key_age", 3600)
+@patch("cobalt_purestorage.rotator.datetime")
+# @pytest.mark.parametrize(
+#     "mock_expirations", [(3500, True), (3600, False), (3700, False)], indirect=True
+# )
+def test_bump_expiration(mock_dt):
+    """Test the key_too_recent function."""
+
+    # Arrange
+    # Need to mock datetime.utcnow in order to know what to assert
+    mock_dt.utcnow.return_value = datetime(2000, 1, 1, 0, 0, 0)
+    old_credentials = { "Expiration": "" }
+
+    # Act
+    result = rotator.bump_aws_credentials(old_credentials)
+
+    # Assert
+    expiration = datetime.fromisoformat(result["Expiration"].replace("Z", ""))
+    assert expiration == datetime(2000, 1, 1, 1, 0, 0)
 
 
 @patch("cobalt_purestorage.configuration.config.access_key_min_age", 3600)
@@ -77,6 +99,22 @@ def test_update_k8s(mock):
     k.update_secret.assert_called_once()
     k.update_secret.assert_called_with(
         "pytest", "secret", "data", "eyJweXRlc3QiOiAicHl0ZXN0In0="
+    )
+
+
+@patch("cobalt_purestorage.configuration.config.k8s_namespace", "pytest")
+@patch("cobalt_purestorage.configuration.config.k8s_secret_name", "secret")
+@patch("cobalt_purestorage.configuration.config.k8s_secret_key", "data")
+@patch("cobalt_purestorage.rotator.K8S")
+def test_get_k8s_secret_decoded(mock):
+    """Test the get_k8_secret_decoded function"""
+
+    k = mock.return_value
+    rotator.get_k8s_secret_decoded("pytest")
+
+    k.get_secret.assert_called_once()
+    k.get_secret.assert_called_with(
+        "pytest", "secret", "data"
     )
 
 
@@ -172,3 +210,20 @@ def test_main_key_actions_no_users(mock_fb):
     rotator.main()
     fb.object_store_user_exists.assert_not_called()
     fb.get_access_keys_for_user.assert_not_called()
+
+def mock_fb_api_error():
+    raise FBAPIError("Could not instantiate FlashBlade client")
+
+@patch("cobalt_purestorage.rotator.PureStorageFlashBlade.requests.get")
+@patch("cobalt_purestorage.rotator.PureStorageFlashBlade")
+@patch("cobalt_purestorage.rotator.update_credentials")
+def test_main_key_actions_api_error(mock_fb, mock_update_credentials):
+    # Arrange
+    mock_fb.return_value = mock_fb_api_error()
+
+    # Act
+    rotator.main()
+
+    # Assert
+    # rotator.get_k8s_secret_decoded.assert_called_once()
+    mock_update_credentials.assert_called_once()
