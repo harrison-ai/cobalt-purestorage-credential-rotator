@@ -15,6 +15,9 @@ logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)
 
 
+class FBAPIError(Exception):
+    pass
+
 class PureStorageFlashBlade:
     """Service class for the PureStorage FlashBlade API"""
 
@@ -36,15 +39,15 @@ class PureStorageFlashBlade:
 
             try:
                 client = Client(url, api_token=token, timeout=timeout)
+                # return client
+
+            except (requests.exceptions.ConnectionError, PureError):
+                logger.error(format_stacktrace())
+                raise FBAPIError("Could not instantiate FlashBlade client")
+                # raise RuntimeError("Could not instantiate FlashBlade client")
+
+            else:
                 return client
-
-            except requests.exceptions.ConnectionError:
-                logger.error(format_stacktrace())
-                raise RuntimeError("Could not instantiate FlashBlade client")
-
-            except PureError:
-                logger.error(format_stacktrace())
-                raise RuntimeError("Could not instantiate FlashBlade Client")
 
     def object_store_user_exists(self, name):
         """Given an Object Store User name,
