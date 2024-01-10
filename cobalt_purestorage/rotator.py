@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from cobalt_purestorage.configuration import config
 from cobalt_purestorage.k8s import K8S
-from cobalt_purestorage.pure_storage import PureStorageFlashBlade
+from cobalt_purestorage.pure_storage import PureStorageFlashBlade, FBAPIError
 
 logging.basicConfig(level=config.log_level)
 logger = logging.getLogger(__name__)
@@ -40,6 +40,26 @@ def key_too_recent(keys):
 
     return False
 
+
+def bump_aws_credentials(old_credentials):
+    """Given old AWS credentials, bump the expiration and return
+    credentials in the format expected by the AWS SDK.
+    """
+
+    expiry_ts = (
+        datetime.utcnow().replace(microsecond=0) + timedelta(seconds=config.failure_mode_key_age)
+    ).isoformat()
+
+    refreshed_credentials = old_credentials
+    refreshed_credentials.update(
+        {
+            "Expiration": f"{expiry_ts}Z",
+        }
+    )
+    
+    logger.debug(f"Credentials updated to expire at {expiry_ts}")
+
+    return refreshed_credentials
 
 def generate_aws_credentials(credentials):
     """Given FlashBlade credentials, return the credentials
@@ -96,6 +116,18 @@ def update_k8s(refreshed_credentials, user_name):
     )
     logger.info(f"Updated k8s. User: {user_name}")
 
+def get_k8s_secret_decoded(user_name):
+    """Get the k8s secret."""
+
+    k8s = K8S()
+    secret = k8s.get_secret(
+        config.k8s_namespace,
+        config.k8s_secret_name,
+        config.k8s_secret_key
+    )
+    # logger.info(f"Fetched k8s secret")
+    
+    return secret
 
 def update_local(refreshed_credentials, user_name):
     """Given a credentials dict, write it out to the local filesystem."""
@@ -112,64 +144,80 @@ def main():
         logger.error("No Interesting Users are configured, exiting...")
         return
 
-    fb = PureStorageFlashBlade()
+    try:
+        fb = PureStorageFlashBlade()
 
-    for user_name in config.interesting_users:
-        logger.debug(f"Begin operations for user: {user_name}")
-        # check username is valid
-        if not fb.object_store_user_exists(user_name):
-            logger.error(f"User {user_name} does not appear to be a valid user...")
-            continue
+    except FBAPIError:
+        logger.warning(
+            f"FB API Error: Will bump expiration field of AWS credential to be FAILURE_MODE_KEY_AGE seconds in the future."
+        )
 
-        if keys := fb.get_access_keys_for_user(user_name):
-            logger.debug(f"Keys for user {user_name}: {keys}")
-            # sort keys to identify the oldest key for deletion
-            sorted_keys = sorted(keys, key=lambda d: d["created"])
+        # get kubernetes secret
+        credentials = get_k8s_secret_decoded()
 
-            # if existing key not too young create a new key
-            if len(keys) == 1:
-                logger.info(f"One key found. User: {user_name}")
+        # bump the expiration field.
+        update_credentials(
+            bump_aws_credentials(credentials),
+            "N/A"
+        )
 
-                if not key_too_recent(keys):
-                    if credentials := fb.post_object_store_access_keys(user_name):
+    else:
+        for user_name in config.interesting_users:
+            logger.debug(f"Begin operations for user: {user_name}")
+            # check username is valid
+            if not fb.object_store_user_exists(user_name):
+                logger.error(f"User {user_name} does not appear to be a valid user...")
+                continue
+
+            if keys := fb.get_access_keys_for_user(user_name):
+                logger.debug(f"Keys for user {user_name}: {keys}")
+                # sort keys to identify the oldest key for deletion
+                sorted_keys = sorted(keys, key=lambda d: d["created"])
+
+                # if existing key not too young create a new key
+                if len(keys) == 1:
+                    logger.info(f"One key found. User: {user_name}")
+
+                    if not key_too_recent(keys):
+                        if credentials := fb.post_object_store_access_keys(user_name):
+                            logger.info(
+                                f"New key created. User: {user_name}, Key: {credentials['name']}"
+                            )
+                            update_credentials(
+                                generate_aws_credentials(credentials), user_name
+                            )
+                    else:
+                        logger.warning(f"Keys are too young, ignoring. User: {user_name}")
+
+                # if existing keys not too young, delete oldest then create new
+                if len(keys) == 2:
+                    logger.info(f"Two keys found. User: {user_name}")
+
+                    if not key_too_recent(keys):
+                        fb.delete_object_store_access_keys([sorted_keys[0]["name"]])
                         logger.info(
-                            f"New key created. User: {user_name}, Key: {credentials['name']}"
+                            f"Oldest key deleted. User: {user_name}, Key: {sorted_keys[0]['name']}"
                         )
-                        update_credentials(
-                            generate_aws_credentials(credentials), user_name
-                        )
-                else:
-                    logger.warning(f"Keys are too young, ignoring. User: {user_name}")
+                        if credentials := fb.post_object_store_access_keys(user_name):
+                            logger.info(
+                                f"New key created. User: {user_name}, Key: {credentials['name']}"
+                            )
+                            update_credentials(
+                                generate_aws_credentials(credentials), user_name
+                            )
 
-            # if existing keys not too young, delete oldest then create new
-            if len(keys) == 2:
-                logger.info(f"Two keys found. User: {user_name}")
+                    else:
+                        logger.warning(f"Keys are too young, ignoring. User: {user_name}")
 
-                if not key_too_recent(keys):
-                    fb.delete_object_store_access_keys([sorted_keys[0]["name"]])
+                # hmmm, the FlashBlade only allows a max of two keys per user
+                if len(keys) > 2:
+                    logger.warning(f"More than two keys found. User: {user_name}")
+
+            else:
+                # no keys, create a new one
+                logger.info(f"No keys found. User: {user_name}")
+                if credentials := fb.post_object_store_access_keys(user_name):
                     logger.info(
-                        f"Oldest key deleted. User: {user_name}, Key: {sorted_keys[0]['name']}"
+                        f"New key created. User: {user_name}, Key: {credentials['name']}"
                     )
-                    if credentials := fb.post_object_store_access_keys(user_name):
-                        logger.info(
-                            f"New key created. User: {user_name}, Key: {credentials['name']}"
-                        )
-                        update_credentials(
-                            generate_aws_credentials(credentials), user_name
-                        )
-
-                else:
-                    logger.warning(f"Keys are too young, ignoring. User: {user_name}")
-
-            # hmmm, the FlashBlade only allows a max of two keys per user
-            if len(keys) > 2:
-                logger.warning(f"More than two keys found. User: {user_name}")
-
-        else:
-            # no keys, create a new one
-            logger.info(f"No keys found. User: {user_name}")
-            if credentials := fb.post_object_store_access_keys(user_name):
-                logger.info(
-                    f"New key created. User: {user_name}, Key: {credentials['name']}"
-                )
-                update_credentials(generate_aws_credentials(credentials), user_name)
+                    update_credentials(generate_aws_credentials(credentials), user_name)
