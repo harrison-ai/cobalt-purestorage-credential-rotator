@@ -1,10 +1,10 @@
-""" Test CLI Module """
+"""Test CLI Module"""
 
 from unittest.mock import patch
 
 from click.testing import CliRunner
 
-import cobalt_purestorage.cli as cli
+from cobalt_purestorage import cli
 
 
 #  https://github.com/pallets/click/issues/824#issuecomment-562581313

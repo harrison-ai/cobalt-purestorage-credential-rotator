@@ -1,5 +1,5 @@
 # builder stage
-FROM python:3.10-slim-bullseye as builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels .
 
 # final stage
-FROM python:3.10-slim-bullseye
+FROM python:3.13-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 # ENV PYTHONDONTWRITEBYTECODE 1

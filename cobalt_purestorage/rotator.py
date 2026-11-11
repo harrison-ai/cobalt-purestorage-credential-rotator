@@ -1,10 +1,10 @@
-""" Rotator Module """
+"""Rotator Module"""
 
 import json
 import logging
 import time
 from base64 import urlsafe_b64encode
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from cobalt_purestorage.configuration import config
 from cobalt_purestorage.k8s import K8S
@@ -35,10 +35,7 @@ def key_too_recent(keys):
     logger.debug(f"min allowable age: {min_allowable_age}")
     ls = [x for x in keys if (curr_ts - (x["created"] / 1000)) < min_allowable_age]
 
-    if ls:
-        return True
-
-    return False
+    return bool(ls)
 
 
 def generate_aws_credentials(credentials):
@@ -57,16 +54,15 @@ def generate_aws_credentials(credentials):
     logger.debug(f"Credentials will expire in {expiry_offset} seconds.")
 
     # RFC3339 UTC datetime string
-    expiry_ts = (
-        datetime.utcnow().replace(microsecond=0) + timedelta(seconds=expiry_offset)
-    ).isoformat()
+    expiry = datetime.now(UTC).replace(microsecond=0) + timedelta(seconds=expiry_offset)
+    expiry_ts = expiry.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     _d = {
         "Version": 1,
         "AccessKeyId": credentials["name"],
         "SecretAccessKey": credentials["secret_access_key"],
         "SessionToken": "",
-        "Expiration": f"{expiry_ts}Z",
+        "Expiration": expiry_ts,
     }
 
     return _d

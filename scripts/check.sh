@@ -6,24 +6,11 @@ CI=${CI:-false}
 
 if [[ ${CI,,} == "true" ]]
 then
-  echo "checking formatting with black.."
-  black --check .
-
-  echo "checking isort.."
-  isort . -c
-
-  echo "checking pycln.."
-  pycln --check .
-
+  uv run ruff check --select I --fix
+	uv run ruff check
+	uv run ruff format
 else
-
-  echo "formatting with black.."
-  black .
-
-  echo "running isort.."
-  isort .
-
-  echo "running pycln.."
-  pycln .
-
+  uv run ruff check --select I
+	uv run ruff check
+	uv run ruff format --check
 fi

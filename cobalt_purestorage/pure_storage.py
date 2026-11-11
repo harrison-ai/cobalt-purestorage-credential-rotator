@@ -1,9 +1,8 @@
-"""  PureStorage FlashBlade Module """
+"""PureStorage FlashBlade Module"""
 
 import logging
 import warnings
 
-import requests
 import urllib3
 from pypureclient.exceptions import PureError
 from pypureclient.flashblade import Client, ObjectStoreAccessKeyPost
@@ -38,7 +37,7 @@ class PureStorageFlashBlade:
                 client = Client(url, api_token=token, timeout=timeout)
                 return client
 
-            except requests.exceptions.ConnectionError:
+            except urllib3.exceptions.HTTPError:
                 logger.error(format_stacktrace())
                 raise RuntimeError("Could not instantiate FlashBlade client")
 

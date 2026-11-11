@@ -1,4 +1,4 @@
-""" Smoketest Module """
+"""Smoketest Module"""
 
 import logging
 
@@ -15,4 +15,3 @@ def main():
     """
 
     logger.debug("Running smoketest function")
-    return None
