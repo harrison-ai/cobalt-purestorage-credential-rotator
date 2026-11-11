@@ -5,7 +5,8 @@ authors = [
     { name = "Harrison AI", email = "platform@harrison.ai" }
     ]
 requires-python = ">=3.13"
-dynamic = ["version"]
+# Not used. Releases are tracked by Github releases.
+version = "0.0.0"
 readme = "README.md"
 
 dependencies = [
@@ -26,16 +27,16 @@ dev = [
 [tool.uv]
 required-version = ">=0.13.0"
 
-[tool.setuptools.packages.find]
-include = ["cobalt_purestorage"]
+[tool.uv.build-backend]
+module-root = ""
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14"]
+build-backend = "uv_build"
 
 [project.scripts]
 rotate-fb-creds = "cobalt_purestorage.cli:rotate_entrypoint"
 smoketest = "cobalt_purestorage.cli:smoketest_entrypoint"
-
-[build-system]
-requires = ["setuptools>=65.3.0"]
-build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 testpaths = [

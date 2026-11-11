@@ -52,9 +52,6 @@ publish-release:
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 	docker push $(IMAGE_NAME):latest
 
-requirements:
-	uv export --format requirements-txt --no-dev --no-emit-project -o requirements.txt
-
 rotate:
 	docker compose up app
 
