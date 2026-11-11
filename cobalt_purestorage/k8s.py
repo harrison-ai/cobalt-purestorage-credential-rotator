@@ -1,4 +1,4 @@
-""" Kubernetes Service Module """
+"""Kubernetes Service Module"""
 
 import logging
 
@@ -55,7 +55,7 @@ class K8S:
                     f"Patched secret: Namespace: {namespace} Secret: {secret_name}"
                 )
 
-            except kubernetes.client.exceptions.ApiException as err:
+            except kubernetes.client.exceptions.ApiException:
                 logger.error(format_stacktrace())
                 raise RuntimeError("error updating k8s secret")
 

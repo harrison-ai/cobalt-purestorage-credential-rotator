@@ -1,4 +1,4 @@
-""" Logging Utils Module """
+"""Logging Utils Module"""
 
 import json
 import sys

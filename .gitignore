@@ -55,3 +55,4 @@ cover/
 .env
 .kubeconfig
 .credentials.json
+.venv

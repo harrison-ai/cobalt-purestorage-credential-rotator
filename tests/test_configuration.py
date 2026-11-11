@@ -1,4 +1,4 @@
-""" Test Config Module """
+"""Test Config Module"""
 
 import os
 from unittest.mock import patch
@@ -27,3 +27,14 @@ def test_env_var_config():
         "account/pytest-one",
         "account/pytest-two",
     }
+
+
+@patch.dict(os.environ, {"LOG_LEVEL": "debug", "FB_URL": "pytest.fqdn"})
+def test_env_var_names_and_validator():
+    """Test uppercase env var names are read
+    and log level is normalised to upper case
+    """
+
+    pytest_config = Settings()
+    assert pytest_config.log_level == "DEBUG"
+    assert pytest_config.fb_url == "pytest.fqdn"

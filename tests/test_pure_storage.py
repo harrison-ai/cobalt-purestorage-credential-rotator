@@ -1,44 +1,14 @@
-""" Test FB Module """
+"""Test FB Module"""
 
 from unittest.mock import Mock, patch
 
 import pytest
-import requests
-from pypureclient.flashblade import Client
+import urllib3
+from pypureclient.exceptions import PureError
 
 from cobalt_purestorage.pure_storage import PureStorageFlashBlade
 
 MOCK_FB_URL = "169.254.99.99"
-
-
-def mock_api_version_response():
-    """This is the actual response obtained from https://<flashblade fqdn>/api/api_version"""
-
-    resp = {
-        "versions": [
-            "1.0",
-            "1.1",
-            "1.2",
-            "1.3",
-            "1.4",
-            "1.5",
-            "1.6",
-            "1.7",
-            "1.8",
-            "1.8.1",
-            "1.9",
-            "1.10",
-            "1.11",
-            "1.12",
-            "2.0",
-            "2.1",
-            "2.2",
-            "2.3",
-            "2.4",
-        ]
-    }
-
-    return resp
 
 
 def mock_api_response(items, status_code):
@@ -61,12 +31,8 @@ def mock_api_response(items, status_code):
 
 
 @patch("cobalt_purestorage.pure_storage.Client")
-def test_init_ok(mock, requests_mock):
+def test_init_ok(mock):
     """Test the class initialisation."""
-
-    requests_mock.get(
-        f"https://{MOCK_FB_URL}/api/api_version", json=mock_api_version_response()
-    )
 
     fb = PureStorageFlashBlade()
     mock.assert_called_once()
@@ -74,37 +40,30 @@ def test_init_ok(mock, requests_mock):
     assert isinstance(fb, PureStorageFlashBlade)
 
 
-def test_init_conn_failure(requests_mock):
+@patch(
+    "cobalt_purestorage.pure_storage.Client",
+    side_effect=urllib3.exceptions.MaxRetryError(None, "/api/api_version"),
+)
+def test_init_conn_failure(mock):
     """Test the class initialisation error handing
     where there is a connection failure.
     """
 
-    requests_mock.get(
-        f"https://{MOCK_FB_URL}/api/api_version",
-        exc=requests.exceptions.ConnectTimeout,
-    )
-
     with pytest.raises(RuntimeError):
-        fb = PureStorageFlashBlade()
+        PureStorageFlashBlade()
 
 
-# pypureclient generates a warning:
-# warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
-# we ignore it
-@pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
-def test_init_pure_failure(requests_mock):
+@patch(
+    "cobalt_purestorage.pure_storage.Client",
+    side_effect=PureError("mock login failure"),
+)
+def test_init_pure_failure(mock):
     """Test the class initialisation error handing
     where the Py Pure Client errors.
     """
 
-    requests_mock.get(
-        f"https://{MOCK_FB_URL}/api/api_version", json=mock_api_version_response()
-    )
-    # mock that the api token is incorrect
-    requests_mock.post(f"https://{MOCK_FB_URL}/api/login", status_code=401)
-
     with pytest.raises(RuntimeError):
-        fb = PureStorageFlashBlade()
+        PureStorageFlashBlade()
 
 
 @patch("cobalt_purestorage.pure_storage.Client")

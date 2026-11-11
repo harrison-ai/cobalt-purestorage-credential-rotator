@@ -1,12 +1,12 @@
-""" Test Rotater Module """
+"""Test Rotater Module"""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import mock_open, patch
 
 import pytest
 
-import cobalt_purestorage.configuration as config
-import cobalt_purestorage.rotator as rotator
+# import cobalt_purestorage.configuration as config
+from cobalt_purestorage import rotator
 
 
 def test_base64():
@@ -23,7 +23,7 @@ def test_base64():
 def test_generate_aws_credentials(mock_dt, mock_credentials):
     """Test the generate_aws_credentials function."""
 
-    mock_dt.utcnow.return_value = datetime(2000, 1, 1, 0, 0, 0)
+    mock_dt.now.return_value = datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC)
 
     result = rotator.generate_aws_credentials(mock_credentials)
 
@@ -31,9 +31,8 @@ def test_generate_aws_credentials(mock_dt, mock_credentials):
     assert "SecretAccessKey" in result
     assert "SessionToken" in result
     assert "Expiration" in result
-
-    expiration = datetime.fromisoformat(result["Expiration"].replace("Z", ""))
-    assert expiration == datetime(2000, 1, 1, 0, 23, 30)
+    assert result["Expiration"] == "2000-01-01T00:23:30Z"
+    mock_dt.now.assert_called_once_with(UTC)
 
 
 @patch("cobalt_purestorage.configuration.config.access_key_min_age", 3600)

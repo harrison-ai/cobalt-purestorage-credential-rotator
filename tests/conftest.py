@@ -1,4 +1,4 @@
-""" Pytest Setup Module """
+"""Pytest Setup Module"""
 
 import random
 import string
@@ -7,8 +7,6 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-
-import cobalt_purestorage.configuration as configuration
 
 
 @pytest.fixture(scope="session", autouse=True)

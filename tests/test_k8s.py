@@ -1,14 +1,13 @@
-""" Test Kubernetes Module """
+"""Test Kubernetes Module"""
 
 from unittest.mock import Mock, patch
 
-import kubernetes
 import pytest
 
 from cobalt_purestorage.k8s import K8S
 
 
-def mock_api_response(items=[]):
+def mock_api_response(items=None):
     """Mock the kubernetes api response"""
 
     resp = {"kind": "SecretList", "apiVersion": "v1", "items": items}
@@ -22,7 +21,7 @@ def mock_api_response(items=[]):
 def test_create_client_kubeconfig(mock_config):
     """Test the _create_client method"""
 
-    k8s = K8S()
+    K8S()
 
     mock_config.load_kube_config.assert_called_with(config_file="/app/kube")
     mock_config.load_incluster_config.assert_not_called()
@@ -34,7 +33,7 @@ def test_create_client_kubeconfig(mock_config):
 def test_create_client_incluster(mock_config):
     """Test the _create_client method"""
 
-    k8s = K8S()
+    K8S()
 
     mock_config.load_incluster_config.assert_called_once()
     mock_config.load_kube_config.assert_not_called()
