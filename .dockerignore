@@ -1,6 +1,5 @@
 *
 !/cobalt_purestorage
-!/tests
-!/pyproject.toml
-!/requirements*
 !/README.md
+!/pyproject.toml
+!/uv.lock

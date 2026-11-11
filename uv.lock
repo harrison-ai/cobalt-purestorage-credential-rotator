@@ -438,6 +438,7 @@ wheels = [
 
 [[package]]
 name = "cobalt-purestorage"
+version = "0.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
